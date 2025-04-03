@@ -15,7 +15,7 @@
 
 ### Project Overview
 ---
-This project involved an analysis of a heart disease dataset sourced from the UCI Machine Learning Repository. The primary goal was to conduct thorough exploratory data analysis and prepare the data for subsequent clustering and classification methods.
+This project involved an analysis of a heart disease dataset sourced from the UCI Machine Learning Repository. The primary goal was to conduct thorough exploratory data analysis and prepare the data for clustering analyses and classification methods, subsequently evaluating these models.
 
 ### Data Sources
 ---

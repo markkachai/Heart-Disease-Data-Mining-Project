@@ -121,7 +121,7 @@ ggplot(heart, aes(x = cp, fill = disease)) +
   geom_bar(position = "dodge") +
   labs(title = "Chest Pain Type vs. Heart Disease", x = "Chest Pain Type", y = "Count", fill = "Heart Disease") +
   theme_minimal()
-![image](https://github.com/user-attachments/assets/d82d5732-a5c1-4213-97af-ac68278ab5ce)
+
 
 # This bar graph raises a very interesting finding, where the majority of individuals with heart disease have a chest pain value of 4, meaning asymptomatic (no chest pain reported). In the other types of chest pain, where a variation of chest pain is reported, individuals with no heart disease heavily outweigh those that do have disease.
 

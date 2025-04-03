@@ -114,7 +114,8 @@ ggplot(heart, aes(x = disease)) +
   labs(title = "Bar Graph of disease", x = "disease", y = "Count")
 table(heart$disease)
 # The bar graph of 'disease' shows that the data is distributed fairly evenly between values 0 and 1, no diagnosis of disease or diagnosis of disease. A table of 'disease' further confirms this and shows us the counts for each value; 0 = 164 and 1 = 139. This shows us that the data set is fairly split between this variable, with 54.1% of individuals in the data having no diagnosis of heart disease and 45.9% of individuals having a diagnosis of heart disease. 
-
+```
+```R
 ## Exploring some of the relationships between pairs of variables
 # Bar Graph of cp vs. disease
 ggplot(heart, aes(x = cp, fill = disease)) +
@@ -122,9 +123,12 @@ ggplot(heart, aes(x = cp, fill = disease)) +
   labs(title = "Chest Pain Type vs. Heart Disease", x = "Chest Pain Type", y = "Count", fill = "Heart Disease") +
   theme_minimal()
 
-
 # This bar graph raises a very interesting finding, where the majority of individuals with heart disease have a chest pain value of 4, meaning asymptomatic (no chest pain reported). In the other types of chest pain, where a variation of chest pain is reported, individuals with no heart disease heavily outweigh those that do have disease.
+```
 
+![Image](https://github.com/user-attachments/assets/bb9c2479-e576-4793-91cf-91ee500112c5)
+
+```R
 # Bar Graph of age vs. disease
 ggplot(heart, aes(x = age, fill = disease)) +
   geom_bar(position = "dodge") +

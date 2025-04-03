@@ -240,4 +240,4 @@ The analysis highlighted the crucial trade-off between sensitivity and specifici
 
 ### References
 ---
-1. [Data](https://archive.ics.uci.edu/dataset/45/heart+disease)
+1. [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/45/heart+disease)

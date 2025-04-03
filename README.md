@@ -138,13 +138,13 @@ In the data cleaning and preprocessing phase, I performed the following tasks:
 
 ### Machine Learning Methods
 ---
-Clustering Analysis
+#### Clustering Analysis
 
 This section of the analysis explores the application of clustering techniques to the heart disease dataset to identify potential groupings within the data.
 
 Two primary methods were employed: K-means clustering and Hierarchical Agglomerative Clustering (HAC).
 
-1. K-Means Clustering
+**1. K-Means Clustering**
 - Libraries: The `stats` and `factoextra` libraries were loaded. `factoextra` was used to help visualize and determine the optimal number of clusters.
 - Preprocessing: The preprocessed predictor variables were used as input for the K-means algorithm.
 - Optimal K Determination: The optimal number of clusters (K) was determined using two methods: The "elbow" method, visualized with `fviz_nbclust` using the "wss" (within-cluster sum of squares) method, suggested K=2 as the point where the rate of decrease in WSS diminishes. The silhouette method, also visualized with `fviz_nbclust`, indicated that K=2 had a very similar average silhouette width to K=3, and given the result of the elbow method, K=2 was chosen. Choosing a smaller K was done to create more distinct groupings.
@@ -152,7 +152,7 @@ Two primary methods were employed: K-means clustering and Hierarchical Agglomera
 - Visualization: The resulting clusters were visualized using `fviz_cluster`. Principal Component Analysis (PCA) was performed using `prcomp` to reduce the dimensionality of the predictor variables for visualization. The data was then projected onto the first two principal components (PC1 and PC2), and plotted using `ggplot2` to visualize clusters, colored by both the original "disease" labels and the assigned cluster labels. This visualization aided in comparing the clustering results with the actual disease status.
 - Observation: The visualization showed a reasonable separation between clusters and some alignment with the actual disease status.
 
-2. Hierarchical Agglomerative Clustering (HAC)
+**2. Hierarchical Agglomerative Clustering (HAC)**
 
 - Library: The `cluster` library was loaded to use the `daisy` function.
 - Distance Matrix Calculation: The `daisy` function was used to calculate the Gower distance matrix, which is suitable for handling mixed data types (both categorical and numerical variables) present in the `heart_data`.
@@ -161,11 +161,52 @@ Two primary methods were employed: K-means clustering and Hierarchical Agglomera
 - Optimal K Determination: Like K-means, the optimal number of clusters for HAC was determined using the elbow and silhouette methods, implemented with `fviz_nbclust` and the `hcut` function. Both methods suggested K=2.
 - Cluster Assignment: Clusters were assigned by cutting the dendrogram at K=2 using `cutree`.
 
-Comparison of Clustering Results:
+**Comparison of Clustering Results**
 - A crosstabulation was created using the `table` function to compare the cluster assignments from K-means and HAC. The comparison revealed a high degree of consistency between the two clustering methods, with only a small number of data points being assigned to different clusters by the two approaches.
 
+#### Classification 
 
+**Classification Methods**
 
+This section details the classification methods applied to the heart disease dataset to predict the presence or absence of heart disease. Two algorithms were implemented: k-Nearest Neighbors (kNN) and Decision Trees.
+
+**1. k-Nearest Neighbors (kNN)**
+
+* **Data Preparation:**
+    * The target variable (`disease`) was added back to the dummy variable encoded dataset (`heart_dummies`) to create `heart_new`.
+    * The data was split into training (80%) and testing (20%) sets using `createDataPartition` from the `caret` package.
+* **Model Training:**
+    * A 10-fold cross-validation training control (`ctrl`) was set up using `trainControl`.
+    * A `tuneGrid` was defined to explore various kNN parameters: `kmax` (3 to 7), `kernel` ("rectangular", "cos"), and `distance` (Minkowski distance power 1 to 3).
+    * The `train` function from `caret` was used to train the kNN model, with preprocessing for centering and scaling the data.
+    * The best model parameters were selected based on cross-validation performance.
+* **Model Evaluation:**
+    * The trained model (`kknn_fit`) was used to predict the target variable on the test set.
+    * Accuracy was calculated using the `confusionMatrix` function.
+* **Visualization:**
+    * Predictions were made on the PCA-transformed data, and the results were visualized using a scatter plot (`ggplot2`) with points colored by the predicted class.
+
+**2. Decision Trees**
+
+* **Data Preparation:**
+    * A separate training and testing split was created from the original `heart` dataset (containing categorical variables) using `createDataPartition`.
+* **Model Training:**
+    * The `train` function was used to train a decision tree model (`rpart`) with 10-fold cross-validation.
+* **Model Evaluation:**
+    * Predictions were made on the test set, and accuracy was calculated using `confusionMatrix`.
+* **Visualization:**
+    * The decision tree structure was visualized using `fancyRpartPlot` from the `rpart.plot` package.
+    * Predictions were made on the PCA-transformed data, and results were visualized with a scatter plot, similar to the kNN visualization.
+* **Hyperparameter Tuning:**
+    * A range of complexity parameter (`cp`) values was tested to tune the decision tree.
+    * The `train` function was used again to train the model with the `tuneGrid` of `cp` values.
+    * The tuned model's performance was evaluated on the test set.
+
+**3. Results and Comparison**
+
+* The performance of both models was compared based on cross-validation and test set accuracy.
+* The original Decision Tree model performed slightly better on the test set than the kNN model.
+* Tuning the `cp` parameter of the Decision Tree did not improve the test set accuracy, suggesting potential overfitting.
 
 
 ### Prescriptive Analysis and Optimization Model

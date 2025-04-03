@@ -6,6 +6,7 @@
 - [Data Sources](#data-sources)
 - [Tools](#tools)
 - [Data Gathering and Integration](#data-gathering-and-integration)
+- [Data Cleaning and Preprocessing](#data-cleaning-and-preprocessing)
 - [Exploratory Data Analysis](#exploratory-data-analysis)
 - [Data Analysis](#data-analysis)
 - [Predictive Analysis](#predictive-analysis)
@@ -50,32 +51,32 @@ Text from file:
 	         #Robert Detrano, M.D., Ph.D.
 
 Data Description:
-  * age: age in years
-  sex: sex (1 = male; 0 = female)
-  cp: chest pain type
-        Value 1: typical angina
-        Value 2: atypical angina
-        Value 3: non-anginal pain
-        Value 4: asymptomatic
-  trestbps: resting blood pressure (in mm Hg on admission to the hospital)
-  chol: serum cholestoral in mg/dl
-  fbs: (fasting blood sugar > 120 mg/dl)  (1 = true; 0 = false)
-  restecg: resting electrocardiographic results
-        Value 0: normal
-        Value 1: having ST-T wave abnormality (T wave inversions and/or ST elevation or depression of > 0.05 mV)
-        Value 2: showing probable or definite left ventricular hypertrophy by Estes' criteria
-  thalach: maximum heart rate achieved
-  exang: exercise induced angina (1 = yes; 0 = no)
-  oldpeak: ST depression induced by exercise relative to rest
-  slope: the slope of the peak exercise ST segment
-        Value 1: upsloping
-        Value 2: flat
-        Value 3: downsloping
-  ca: number of major vessels (0-3) colored by flourosopy
-  thal: 3 = normal; 6 = fixed defect; 7 = reversable defect
-  num: diagnosis of heart disease (angiographic disease status)
-        Value 0: < 50% diameter narrowing
-        Value 1: > 50% diameter narrowing
+	age: age in years
+	sex: sex (1 = male; 0 = female)
+	cp: chest pain type
+        	Value 1: typical angina
+        	Value 2: atypical angina
+        	Value 3: non-anginal pain
+        	Value 4: asymptomatic
+	trestbps: resting blood pressure (in mm Hg on admission to the hospital)
+	chol: serum cholestoral in mg/dl
+	fbs: (fasting blood sugar > 120 mg/dl)  (1 = true; 0 = false)
+	restecg: resting electrocardiographic results
+        	Value 0: normal
+        	Value 1: having ST-T wave abnormality (T wave inversions and/or ST elevation or depression of > 0.05 mV)
+		Value 2: showing probable or definite left ventricular hypertrophy by Estes' criteria
+	thalach: maximum heart rate achieved
+	exang: exercise induced angina (1 = yes; 0 = no)
+	oldpeak: ST depression induced by exercise relative to rest
+	slope: the slope of the peak exercise ST segment
+        	Value 1: upsloping
+        	Value 2: flat
+        	Value 3: downsloping
+	ca: number of major vessels (0-3) colored by flourosopy
+	thal: 3 = normal; 6 = fixed defect; 7 = reversable defect
+	num: diagnosis of heart disease (angiographic disease status)
+        	Value 0: < 50% diameter narrowing
+        	Value 1: > 50% diameter narrowing
 
 ### Tools
 ---
@@ -85,17 +86,56 @@ Data Description:
 ---
 In the initial data preparation phase, I performed the following tasks:
 1. Data loading and inspection.
-2. Handling missing values.
-3. Data cleaning and formatting.
+2. Adding column names.
+3. Constructing a new variable, 'disease'.
+4. Converting variables to be categorical or numeric.
 
 ### Exploratory Data Analysis
 ---
-EDA involved exploring the Citi Bike demand data to answer any key questions, such as:
+EDA involved exploring the heart disease data to consider the distributions of each variable and at least some of the relationships between pairs of variables.
 
-- Is demand higher during the daytime or evening?
-- Which variables influence demand?
-- How many bikes should we allocate to each station?
-- How many trips between stations every day?
+Examples of code worked with
+
+```R
+# age
+summary(heart$age)
+# To find bin width: (Max(x)-Min(x))/Number of Bins = Bin Width
+# (77.00-29.00)/8 ≈ 6
+# Histogram of age
+ggplot(heart, aes(x = age)) + 
+  geom_histogram(binwidth = 6, fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Distribution of Age", x = "Age", y = "Count") +
+  theme_minimal()
+# The histogram for 'age' shows a slight negative skew, with values slightly concentrated on the right. The skewness of the distribution of 'age' is also backed up by the fact that the mean value is less than the median.
+
+# disease (target variable)
+ggplot(heart, aes(x = disease)) +
+  geom_bar(fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Bar Graph of disease", x = "disease", y = "Count")
+table(heart$disease)
+# The bar graph of 'disease' shows that the data is distributed fairly evenly between values 0 and 1, no diagnosis of disease or diagnosis of disease. A table of 'disease' further confirms this and shows us the counts for each value; 0 = 164 and 1 = 139. This shows us that the data set is fairly split between this variable, with 54.1% of individuals in the data having no diagnosis of heart disease and 45.9% of individuals having a diagnosis of heart disease. 
+
+## Exploring some of the relationships between pairs of variables
+# Bar Graph of cp vs. disease
+ggplot(heart, aes(x = cp, fill = disease)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Chest Pain Type vs. Heart Disease", x = "Chest Pain Type", y = "Count", fill = "Heart Disease") +
+  theme_minimal()
+![image](https://github.com/user-attachments/assets/d82d5732-a5c1-4213-97af-ac68278ab5ce)
+
+# This bar graph raises a very interesting finding, where the majority of individuals with heart disease have a chest pain value of 4, meaning asymptomatic (no chest pain reported). In the other types of chest pain, where a variation of chest pain is reported, individuals with no heart disease heavily outweigh those that do have disease.
+
+# Bar Graph of age vs. disease
+ggplot(heart, aes(x = age, fill = disease)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Age vs. Heart Disease", x = "Age", y = "Count", fill = "Heart Disease") +
+  theme_minimal()
+# This bar graph shows large counts of individuals without heart disease younger than 55 years old, but shows a large sum of individuals with heart disease older than 55 years old. Thus, age seems to play a factor in whether or not an individual is diagnosed with heart disease.
+```
+
+### Data Cleaning and Preprocessing
+---
+
 
 ### Data Analysis
 ---

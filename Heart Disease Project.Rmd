@@ -1,0 +1,641 @@
+---
+title: "Heart Disease Data Mining Project"
+author: "Mark Kachai"
+date: "2025-03-19"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+```{r libraries, message=FALSE, include = FALSE}
+### Install packages
+#install.packages("tidyverse")
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("caret")
+#install.packages("e1071")
+#install.packages("rattle")
+
+
+### Load libraries for use in current working session
+library('tidyverse')
+library('dplyr')
+library('ggplot2')
+library('caret')
+library('e1071')
+library('rpart')
+library('rattle')
+
+```
+
+
+## Data Gathering and Integration
+
+Link to data: <https://archive.ics.uci.edu/dataset/45/heart+disease>
+
+```{r Data Gathering and Integration}
+# The file downloaded from UCI describes the contents of the heart-disease directory.
+# Text from file:
+   #This directory contains 4 databases concerning heart disease diagnosis.
+   #All attributes are numeric-valued.  The data was collected from the
+   #four following locations:
+
+     #1. Cleveland Clinic Foundation (cleveland.data)
+     #2. Hungarian Institute of Cardiology, Budapest (hungarian.data)
+     #3. V.A. Medical Center, Long Beach, CA (long-beach-va.data)
+     #4. University Hospital, Zurich, Switzerland (switzerland.data)
+
+   #Each database has the same instance format.  While the databases have 76
+   #raw attributes, only 14 of them are actually used.  Thus I've taken the
+   #liberty of making 2 copies of each database: one with all the attributes
+   #and 1 with the 14 attributes actually used in past experiments.
+
+   #The authors of the databases have requested:
+
+      #...that any publications resulting from the use of the data include the 
+      #names of the principal investigator responsible for the data collection
+      #at each institution.  They would be:
+
+       #1. Hungarian Institute of Cardiology. Budapest: Andras Janosi, M.D.
+       #2. University Hospital, Zurich, Switzerland: William Steinbrunn, M.D.
+       #3. University Hospital, Basel, Switzerland: Matthias Pfisterer, M.D.
+       #4. V.A. Medical Center, Long Beach and Cleveland Clinic Foundation:
+	         #Robert Detrano, M.D., Ph.D.
+
+# In this assignment we will use the database 'cleveland.data', more specifically the file titled 'processed.cleveland.data'
+### Set working directory
+# more file commands -> set as working directory
+### Import data file using read.csv
+heart <- read.csv(file = "cleveland_data.csv", header = FALSE)
+head(heart)
+# Adding column names
+colnames(heart) <- c("age", "sex", "cp", "trestbps", "chol", "fbs", "restecg", "thalach", "exang", "oldpeak", "slope", "ca", "thal", "num")
+head(heart)
+### Variable information:
+  # age: age in years
+  # sex: sex (1 = male; 0 = female)
+  # cp: chest pain type
+        # Value 1: typical angina
+        # Value 2: atypical angina
+        # Value 3: non-anginal pain
+        # Value 4: asymptomatic
+  # trestbps: resting blood pressure (in mm Hg on admission to the hospital)
+  # chol: serum cholestoral in mg/dl
+  # fbs: (fasting blood sugar > 120 mg/dl)  (1 = true; 0 = false)
+  # restecg: resting electrocardiographic results
+        # Value 0: normal
+        # Value 1: having ST-T wave abnormality (T wave inversions and/or ST elevation or depression of > 0.05 mV)
+        # Value 2: showing probable or definite left ventricular hypertrophy by Estes' criteria
+  # thalach: maximum heart rate achieved
+  # exang: exercise induced angina (1 = yes; 0 = no)
+  # oldpeak: ST depression induced by exercise relative to rest
+  # slope: the slope of the peak exercise ST segment
+        # Value 1: upsloping
+        # Value 2: flat
+        # Value 3: downsloping
+  # ca: number of major vessels (0-3) colored by flourosopy
+  # thal: 3 = normal; 6 = fixed defect; 7 = reversable defect
+  # num: diagnosis of heart disease (angiographic disease status)
+        # Value 0: < 50% diameter narrowing
+        # Value 1: > 50% diameter narrowing
+
+# According to the file 'cleve.mod', class att: 0 is healthy, 1,2,3,4 is sick. Currently the variable 'num' ranges from 1-4, when it should contain values 0 or 1.
+# With this information in mind, we will construct a new variable called disease that is defined as follows: 
+        # 1, if num >= 1
+    # disease = 
+        # 0, if num == 0 
+
+heart$disease <- ifelse(heart$num >= 1, 1, 0)
+head(heart)
+
+# Checking if all values in 'num' >= 1 converted to 1:
+table(heart$num)
+num_disease1 <- 55 + 36 + 35 + 13 
+num_disease1
+sum(heart$disease == 1)
+# All previous values in 'num' >=1 were converted to 1 in the new variable 'disease'
+# Now;
+  # disease : diagnosis of heart disease (angiographic disease status)
+        # Value 0: < 50% diameter narrowing
+        # Value 1: > 50% diameter narrowing
+
+# Removing variable 'num', replaced with 'disease'
+heart <- heart %>% select(-num)
+head(heart)
+str(heart)
+
+# Currently, all variables are integer/numerical, however some of these variables should be categorical.
+# According to the files on this data set, there should be 8 categorical and 6 numeric variables.
+# Based on the information on variables sex, cp, fbs, restecg, exang, slope, thal, and disease, they should be changed to be categorical:
+heart$sex <- as.factor(heart$sex)
+heart$cp <- as.factor(heart$cp)
+heart$fbs <- as.factor(heart$fbs)
+heart$restecg <- as.factor(heart$restecg)
+heart$exang <- as.factor(heart$exang)
+heart$slope <- as.factor(heart$slope)
+heart$thal <- as.factor(heart$thal)
+heart$disease <- as.factor(heart$disease)
+str(heart) # These variables were changed to be categorical
+
+```
+
+
+## Exploratory Data Analysis
+
+```{r Exploratory Data Analysis}
+# Observing structure of the data set
+str(heart)
+
+# Variables age, trestbps, chol, thalach, oldpeak, and ca are int/numeric
+## Visualizing distributions of all int/numeric variables:
+# age
+summary(heart$age)
+# To find bin width: (Max(x)-Min(x))/Number of Bins = Bin Width
+# (77.00-29.00)/8 ≈ 6
+# Histogram of age
+ggplot(heart, aes(x = age)) + 
+  geom_histogram(binwidth = 6, fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Distribution of Age", x = "Age", y = "Count") +
+  theme_minimal()
+# The histogram for 'age' shows a slight negative skew, with values slightly concentrated on the right. The skewness of the distribution of 'age' is also backed up by the fact that the mean value is less than the median.
+
+# trestbps
+summary(heart$trestbps)
+# (200.0-94.0)/10 ≈ 11
+# Histogram of trestbps
+ggplot(heart, aes(x = trestbps)) + 
+  geom_histogram(binwidth = 11, fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Distribution of trestbps", x = "Resting Blood Pressure (mm Hg)", y = "Count") +
+  theme_minimal()
+# The histogram for 'trestbps' shows a slight positive skew, with values slightly concentrated on the left. The skewness of the distribution of 'trestbps' is also backed up by the fact that the mean value is greater than the median.
+
+# chol
+summary(heart$chol)
+# (564.0-126.0)/11 ≈ 40
+# Histogram of chol
+ggplot(heart, aes(x = chol)) + 
+  geom_histogram(binwidth = 40, fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Distribution of chol", x = "Serum Cholesterol (mg/dL)", y = "Count") +
+  theme_minimal()
+# The histogram for 'chol' shows a positive skew, with values more concentrated on the left and larger values, or outlier(s), pulling the tail to the right. The skewness of the distribution of 'chol' is also backed up by the fact that the mean value is greater than the median.
+
+# thalach
+summary(heart$thalach)
+# (202.0-71.0)/10 ≈ 13
+# Histogram of thalach
+ggplot(heart, aes(x = thalach)) + 
+  geom_histogram(binwidth = 13, fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Distribution of thalach", x = "Maximum Heart Rate Achieved", y = "Count") +
+  theme_minimal()
+# The histogram for 'thalach' shows a negative skew, with values more concentrated on the right and smaller values, or outlier(s), pulling the tail to the left. The skewness of the distribution of 'thalach' is also backed up by the fact that the mean value is less than the median. Considering the focus of this data set, this distribution gives insight into the state of individuals' heart health and potential areas of concern.
+
+# oldpeak
+summary(heart$oldpeak)
+# (6.20-0.0)/6 ≈ 1
+# Histogram of oldpeak
+ggplot(heart, aes(x = oldpeak)) + 
+  geom_histogram(binwidth = 1, fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Distribution of oldpeak", x = "oldpeak", y = "Count") +
+  theme_minimal()
+# The histogram for 'oldpeak' shows a strong positive skew, with values more concentrated on the left and larger values, or outlier(s), pulling the tail to the right. The skewness of the distribution of 'oldpeak' is also backed up by the fact that the mean value is greater than the median. Most individuals fall in the lower range of values for this variable, which describes ST depression induced by exercise relative to rest.
+
+# ca
+summary(heart$ca)
+# (3.0-0.0)/3 ≈ 1
+# Histogram of ca
+ggplot(heart, aes(x = ca)) + 
+  geom_histogram(binwidth = 1, fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Distribution of ca", x = "Number of major vessels colored by flourosopy", y = "Count") +
+  theme_minimal()
+# The histogram for 'ca' shows a positive skew, with values more concentrated on the left and larger values pulling the tail to the right The skewness of the distribution of 'ca' is also backed up by the fact that the mean value is greater than the median. Considering the focus of this data set, this distribution gives insight into the state of individuals' heart health and potential areas of concern.
+
+
+# Variables sex, cp, fbs, restecg, exang, slope, thal, and disease are categorical
+## Visualizing distributions of all categorical variables:
+# sex
+ggplot(heart, aes(x = sex)) +
+  geom_bar(fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Bar Graph of sex", x = "sex", y = "Count")
+table(heart$sex)
+# The bar graph of 'sex' shows that '1' occurs more frequently than '0', meaning there are more males than females in the data. A table of 'sex' further confirms this, as 1 = 206 and 0 = 97. This higher proportion of males compared to females could introduce bias in analyses where gender is a factor.
+
+# cp
+ggplot(heart, aes(x = cp)) +
+  geom_bar(fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Bar Graph of cp", x = "cp", y = "Count")
+table(heart$cp)
+# The bar graph of 'cp' shows that most data points fall into value 4 (asymptomatic), followed by 3 (non-anginal pain). A table of 'cp' further shows the count for each value; 1 (typical angina) = 23, 2 (atypical angina) = 50, 3 (non-anginal pain) = 86, and 4 (asymptomatic) = 144. Since this variable explains chest pain type, we can say that 7.6% of individuals in the data set have typical angina, 16.5% have atypical angina, 28.4% have non-anginal pain, and 47.5% are asymptomatic. With this context in mind, the data is distributed in a way where roughly half of the individuals are asymptomatic while the other half shows some form of chest pain.
+
+# fbs
+ggplot(heart, aes(x = fbs)) +
+  geom_bar(fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Bar Graph of fbs", x = "fbs", y = "Count")
+table(heart$fbs)
+# The bar graph of 'fbs' shows that most data points fall into value 0 (fasting blood sugar > 120 mg/dL is false), with little falling into value 1 (fasting blood sugar > 120 mg/dL is true). A table of 'fbs' further shows the count for each value; 0 = 258 and 1 = 45. Since this variable shows whether an individuals' fasting blood sugar is above 120 mg/dL or not, we can say that 85.1% of individuals in the data set do not have a fasting blood sugar > 120 mg/dL, while 14.9% do. With this context in mind, we can tell that the majority of individuals in the data set have normal fasting blood sugar levels, while a smaller portion have elevated levels.
+
+# restecg
+ggplot(heart, aes(x = restecg)) +
+  geom_bar(fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Bar Graph of restecg", x = "restecg", y = "Count")
+table(heart$restecg)
+# The bar graph of 'restecg' shows that the data is distributed fairly evenly between values 0 and 2, while value 1 contains very little observations. A table of 'restecg' further confirms this and shows us the counts for each value; 0 = 151, 1 = 4, and 2 = 148. Since this variable explains resting electrocardiograph results, we can better put these values into context: 49.8% of individuals have normal resting ecg results (0), 1.3% of individuals' resting ecg results have ST-T wave abnormality (1), and 48.8% of individuals resting ecg results show probable or definite left ventricular hypertrophy (2). With this context in mind, the data is distributed in a way where roughly half of the individuals have normal resting ecg results while the other half shows some form of complication in their resting ecg results.
+
+# exang
+ggplot(heart, aes(x = exang)) +
+  geom_bar(fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Bar Graph of exang", x = "exang", y = "Count")
+table(heart$exang)
+# The bar graph of 'exang' shows that '0' occurs more frequently than '1', meaning less individuals in the data set experience exercise induced angina than those who do not. A table of 'exang' further confirms this, as 1 = 204 and 0 = 99. This higher proportion of individuals who don't experience exercise induced angina to those who do could introduce bias in analyses where exang is a factor.
+
+# slope
+ggplot(heart, aes(x = slope)) +
+  geom_bar(fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Bar Graph of slope", x = "slope", y = "Count")
+table(heart$slope)
+# The bar graph of 'slope' shows that the data is distributed fairly evenly between values 1 and 2, while value 3 contains very little observations. A table of 'slope' further confirms this and shows us the counts for each value; 1 = 142, 2 = 140, and 3 = 21. Since the values of this variable explain the slope of the peak exercise ST segment, we can better put these values into context: 46.9% of individuals' slope of the peak exercise ST segment is upsloping (1), 46.2% of individuals' slope of the peak exercise ST segment is flat (2), and 6.9% of individuals' slope of the peak exercise ST segment is downsloping (3). With this context in mind, we can see that most individuals have either an upsloping or flat slope of the peak exercise ST segment, with a significantly smaller proportion having a downsloping peak exercise ST segment.
+
+# thal
+ggplot(heart, aes(x = thal)) +
+  geom_bar(fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Bar Graph of thal", x = "thal", y = "Count")
+table(heart$thal)
+# The bar graph of 'thal' shows that the data is distributed mostly between values 3 and 7, while value 6 contains very little observations. There is also a bar containing NA values, which we will address in the next section, Data Cleaning. A table of 'thal' further shows us the counts for each value; 3 = 166, 6 = 18, and 7 = 117. Since the values of this variable represent different categories of thalassemia as detected in a medical test, we can better put these values into context: 54.8% of individuals' show as normal, meaning there is no defect detected in blood flow to the heart (3). 5.9% of individuals' show as having a fixed defect, meaning there is a defect in blood flow that indicates permanent damage (6). Lastly, 38.6% of individuals' show as having a reversible defect, meaning there is a defect present in blood flow under stress, but not at rest (7). Most individuals fall into values 3 and 7, where there is no defect in blood flow or a defect only present under stress. Meanwhile, there is a small percentage of individuals that have a permanent defect in blood flow.
+
+# disease (target variable)
+ggplot(heart, aes(x = disease)) +
+  geom_bar(fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Bar Graph of disease", x = "disease", y = "Count")
+table(heart$disease)
+# The bar graph of 'disease' shows that the data is distributed fairly evenly between values 0 and 1, no diagnosis of disease or diagnosis of disease. A table of 'disease' further confirms this and shows us the counts for each value; 0 = 164 and 1 = 139. This shows us that the data set is fairly split between this variable, with 54.1% of individuals in the data having no diagnosis of heart disease and 45.9% of individuals having a diagnosis of heart disease. 
+
+
+## Exploring some of the relationships between pairs of variables
+# Scatterplot of chol vs. age
+ggplot(heart, aes(x = age, y = chol)) +
+  geom_point(alpha = 0.7, color = "red") +
+  labs(title = "Cholesterol vs. Age", x = "Age", y = "Serum Cholesterol (mg/dL)") +
+  theme_minimal()
+# Correlation between chol and age
+cor(heart$age, heart$chol)
+# There is a weak, positive correlation between cholesterol and age.
+
+# Scatterplot of thalach vs. age
+ggplot(heart, aes(x = age, y = thalach)) +
+  geom_point(alpha = 0.7, color = "red") +
+  labs(title = "Maximum Heart Rate vs. Age", x = "Age", y = "Maximum Heart Rate") +
+  theme_minimal()
+# Correlation between thalach and age
+cor(heart$age, heart$thalach)
+# There is a mild, negative correlation between maximum heart rate and age. The scatterplot also shows that maximum heart rate seems to slightly decrease as age increases.
+
+# Bar Graph of cp vs. disease
+ggplot(heart, aes(x = cp, fill = disease)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Chest Pain Type vs. Heart Disease", x = "Chest Pain Type", y = "Count", fill = "Heart Disease") +
+  theme_minimal()
+# This bar graph raises a very interesting finding, where the majority of individuals with heart disease have a chest pain value of 4, meaning asymptomatic (no chest pain reported). In the other types of chest pain, where a variation of chest pain is reported, individuals with no heart disease heavily outweigh those that do have disease.
+
+# Bar Graph of age vs. disease
+ggplot(heart, aes(x = age, fill = disease)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Age vs. Heart Disease", x = "Age", y = "Count", fill = "Heart Disease") +
+  theme_minimal()
+# This bar graph shows large counts of individuals without heart disease younger than 55 years old, but shows a large sum of individuals with heart disease older than 55 years old. Thus, age seems to play a factor in whether or not an individual is diagnosed with heart disease.
+
+```
+
+
+## Data Cleaning and Preprocessing
+
+```{r Data Cleaning and Preprocessing}
+# Some data cleaning was done in data gathering and integration in order to properly explore the data, however, there are still data cleaning steps that must be taken before continuing.
+
+# Verifying if the data set contains unique observations
+any(duplicated(heart)) 
+# FALSE is returned, so no duplicate rows exist
+
+# Finding and addressing missing values (NA's) in the data set
+summary(heart)
+# Here, we see that variables ca and thal contain missing values (4 NA's in ca and 2 NA's in thal).
+# Finding all rows containing NA's
+na_rows <- heart %>% filter(apply(is.na(.), 1, any))
+print(na_rows)
+# In total, there are 6 observations, or rows, that contain NA's. This is consistent with what was previously seen. After removing NA's, we should see 297 rows remaining.
+heart <- heart %>% drop_na(ca, thal)
+# In the environment pane, 297 observations remain after removing rows with NA.
+
+# Data Preprocessing
+# During data exploration, we found the variable chol to have a positively skewed distribution, due to larger values, or outlier(s), pulling the tail to the right.
+summary(heart$chol)
+# Histogram of chol
+ggplot(heart, aes(x = chol)) + 
+  geom_histogram(binwidth = 40, fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Distribution of chol", x = "Serum Cholesterol (mg/dL)", y = "Count") +
+  theme_minimal()
+# Based on the histogram of chol, this skewness can be attributed to the outlier, or max value, which is 564.
+# Since high cholesterol values do exist in patients, we should retain this value instead of removing it. However, we can transform the chol column using a log transformation to see if this reduces the influence of the outlier value.
+heart <- heart %>% mutate(log_chol = log(chol))
+summary(heart$log_chol)
+# Log-Transformed Distribution of chol
+ggplot(heart, aes(x = log_chol)) +
+  geom_histogram(binwidth = 0.1, fill = "red", alpha = 0.7, color = "black") +
+  labs(title = "Distribution of Log-Transformed Cholesterol", x = "Log(chol)", y = "Count") +
+  theme_minimal()
+# After log transformation of chol, the effect of the outlier on the skewness of its distribution is virtually gone, and the data is normally distributed.
+
+
+# Removing the 'disease' column (target variable) and storing it separately before creating dummy variables
+heart_data <- heart %>% select(-disease)
+heart_label <- heart$disease
+# Using dummy variables to make the data fully numeric
+heart_dummy <- dummyVars(~ ., data = heart_data)
+heart_dummies <- predict(heart_dummy, newdata = heart_data)
+heart_dummies <- as.data.frame(heart_dummies)
+head(heart_dummies)
+str(heart_dummies)
+# Finding and removing near zero variance predictors:
+heart_nzv <- nearZeroVar(heart_dummies)
+# Observing near zero variance predictors:
+length(heart_nzv)
+# There is 1 variable with near-zero variance, so we will remove this predictor
+heart_dummies <- heart_dummies[, -heart_nzv]
+predictors <- heart_dummies
+
+# Using center and scale to standardize the data
+preproc <- preProcess(predictors, method = c("center", "scale"))
+
+```
+
+
+## Clustering Analysis
+
+```{r libraries2, message=FALSE, include = FALSE}
+### Install packages
+#install.packages("factoextra")
+### Load libraries
+library('stats')
+library('factoextra')
+```
+
+```{r Clustering Analysis}
+set.seed(123)
+# k-means
+# We have to call predict to fit our data based on pre-processing
+predictors <- predict(preproc, predictors)
+# Determining optimal number of K:
+# Find the knee
+fviz_nbclust(predictors, kmeans, method = "wss")
+# The slope seems to even out after 2 or 3, so we will use K = 2
+# Comparing the average silhouette scores of different K values
+fviz_nbclust(predictors, kmeans, method = "silhouette")
+# The peak in the plot is at K = 3, however, the peak at K = 2 has almost the same average silhouette width, so we will choose K = 2.
+# We will fit the data using K = 2 and multiple restarts
+fit <- kmeans(predictors, centers = 2, nstart = 25)
+# Displaying the kmeans object information
+fit
+
+# Displaying the cluster plot
+fviz_cluster(fit, data = predictors)
+
+# Calculating PCA
+pca = prcomp(predictors)
+# Saving as a dataframe
+rotated_data = as.data.frame(pca$x)
+# Adding original labels as a reference
+rotated_data$Disease <- heart$disease
+# Plot and color by labels
+ggplot(data = rotated_data, aes(x = PC1, y = PC2, col = Disease)) + geom_point(alpha = 0.6) + theme_minimal()
+# From this scatter-plot, we see that the characteristics of disease (diagnosis of heart disease) in the heart data, captured by PC1 and PC2, are fairly varying and there is a separation between diagnosis and no diagnosis of heart disease.
+
+# Visualizing the cluster plot without area markers
+# Assigning clusters as a new column
+rotated_data$Clusters = as.factor(fit$cluster)
+# Plot and color by labels
+ggplot(data = rotated_data, aes(x = PC1, y = PC2, col = Clusters)) + geom_point() + theme_minimal()
+
+
+# Using hierarchical agglomerative clustering to cluster the heart data. This time we can leave the categorical variables in place, because we will use the gower metric from daisy in the cluster library to get the distances.
+# Loading library 
+library(cluster)
+# Passing dataframe directly with metric = gower
+dist_mat <- daisy(heart_data, metric = "gower")
+# Result is a dissimilarity matrix
+summary(dist_mat)
+# Determining the assembly/agglomeration method and running hclust
+hfit <- hclust(dist_mat, method = "average")
+plot(hfit)
+
+# Determining optimal number of K:
+# Knee plot
+fviz_nbclust(heart_data, FUN = hcut, method = "wss")
+# The slope seems to even out after 2 or 3, so we will use K = 2
+# Comparing the average silhouette scores of different K values
+fviz_nbclust(heart_data, FUN = hcut, method = "silhouette")
+# This method shows that the peak in the plot is at K = 2.
+# Based on these results, we will use a value of K = 2
+# Building the new model
+h2 <- cutree(hfit, k = 2)
+
+# Comparing the HAC and k-means clusterings with a crosstabulation
+table(HAC_Clusters = h2, KMeans_Clusters = fit$cluster)
+# Based on the crosstabulation of the HAC and k-means clusterings, we can see that the two methods were fairly consistent with each other, with only 21 out of 297 points not aligned with each other. Cluster 1 in HAC mostly aligns with Cluster 1 in k-means, but 13 points are assigned to Cluster 2 in k-means. Cluster 2 in HAC mostly aligns with Cluster 2 in k-means, but 8 points are assigned to Cluster 1 in k-means. Overall, the majority of points match across both methods, meaning HAC and k-means agree on the overall clustering structure with a few disagreements.
+
+```
+
+
+## Classification Methods
+
+```{r Classification Methods}
+# Adding the target variable back into the data
+heart_new <- cbind(heart_dummies, disease = heart$disease)
+str(heart_new)
+
+set.seed(9)
+
+## kNN
+# Creating a train/test partition
+index = createDataPartition(y = heart_new$disease, p = 0.8, list = FALSE)
+# Training set
+train_set = heart_new[index, ]
+# Test set
+test_set = heart_new[-index, ]
+# Evaluation method
+ctrl = trainControl(method = "cv", number = 10)
+# Setting up a tuneGrid with the tuning parameters
+tuneGrid <- expand.grid(kmax = 3:7,
+                        kernel = c("rectangular", "cos"),
+                        distance = 1:3)
+# Tuning and fitting the model with 10-fold cross validation
+# Standardization and specialized tune grid
+kknn_fit <- train(disease ~ ., data = train_set,
+                method = "kknn",
+                trControl = ctrl,
+                preProcess = c("center", "scale"),
+                tuneGrid = tuneGrid)
+kknn_fit
+# In the kNN model above, we tested a range of k values 3 to 7, rectangular and cosine-based distance, and powers of Minkowski 1 to 3.
+# The final values used for the model were kmax = 7, distance = 2, and kernel = rectangular, giving an accuracy value of 0.8194.
+# Predicting on test data
+kknn_pred <- predict(kknn_fit, test_set)
+# Evaluating accuracy
+kknn_accuracy <- confusionMatrix(kknn_pred, test_set$disease)$overall["Accuracy"]
+kknn_accuracy
+# kNN accuracy using test data = 0.8136
+
+# Predicting on original heart data
+knn_pca_pred <- predict(kknn_fit, heart_new)
+# Adding predictions to PCA data
+rotated_data$knn_labels <- knn_pca_pred
+# Visualization
+# kNN Scatterplot
+ggplot(rotated_data, aes(x = PC1, y = PC2, color = knn_labels)) +
+  geom_point() +
+  labs(title = "kNN Predictions on PCA Data") +
+  scale_color_manual(values = c("1" = "darkred", "0" = "orange")) +
+  theme_minimal()
+
+
+## Decision Trees
+# Since decision trees can handle categorical variables, we create a new train/test partition using the original values (no dummy variables)
+set.seed(9)
+index_tree = createDataPartition(y = heart$disease, p = 0.8, list = FALSE)
+# Training set for the decision tree
+train_set_tree = heart[index_tree, ]
+# Test set for the decision tree
+test_set_tree = heart[-index_tree, ]
+# Evaluation method (previously defined as 'ctrl')
+# ctrl = trainControl(method = "cv", number = 10)
+# Using the train_set_tree with original categorical variables
+# Fitting the model
+tree1 <- train(disease ~., data = train_set_tree, method = "rpart", trControl = ctrl)
+# Evaluating fit
+tree1
+# Accuracy using 10-fold cross validation is 0.7694.
+# Predicting on the test set (using the test_set_tree without dummies)
+tree_pred <- predict(tree1, test_set_tree)
+# Evaluating accuracy
+tree_accuracy <- confusionMatrix(tree_pred, test_set_tree$disease)$overall["Accuracy"]
+tree_accuracy
+# Decision Tree accuracy using test data = 0.8475
+# Visualizing the decision tree
+fancyRpartPlot(tree1$finalModel, caption = "")
+
+# Predicting on original heart data
+tree_pca_pred <- predict(tree1, heart)
+# Adding predictions to PCA data
+rotated_data$tree_labels <- tree_pca_pred
+# Visualization
+# Decision Tree Scatterplot
+ggplot(rotated_data, aes(x = PC1, y = PC2, color = tree_labels)) +
+  geom_point() +
+  labs(title = "Decision Tree Predictions on PCA Data") +
+  scale_color_manual(values = c("1" = "darkred", "0" = "orange")) +
+  theme_minimal()
+
+# Based on the scatterplot for the decision tree model, it seems to classify more data points as '0' than the kNN model did. It is also important to note the k-NN model was trained and evaluated on the heart data set with dummy variables, while the decision tree used the original categorical features. 
+
+# kNN Model:
+# Cross-validation accuracy: 0.8194
+# Test set accuracy: 0.8136
+
+# Decision Tree Model:
+# Cross-validation accuracy: 0.7694
+# Test set accuracy: 0.8475
+
+# Comparing the test set accuracies, the Decision Tree model (0.8475) appears to be a slightly better classifier for the dataset than the kNN model (0.8136). Also, the decision tree achieved a higher accuracy on the data it had never encountered during training. The fact that the decision tree performed well with the original categorical variables suggests that the relationships in the data might be captured well by splits based on these categories. k-NN, relying on distance, might be more sensitive to the specific encoding of the categorical variables.
+
+# Testing a range of cp values to try for decision trees
+cp_values <- seq(0.001, 0.1, by = 0.005)
+tuneGrid_cp_range <- data.frame(cp = cp_values)
+# Training the decision tree with the tuneGrid and previous parameters
+set.seed(7)
+tree1_cp_tuned <- train(disease ~.,
+                       data = train_set_tree,
+                       method = "rpart",
+                       trControl = ctrl,
+                       tuneGrid = tuneGrid_cp_range)
+# Evaluating fit
+tree1_cp_tuned
+# The accuracy of the decision tree model increased after tuning cp. The final value used for the model was cp = 0.011, where accuracy = 0.79.
+# Predicting on the test set with new model (using the test_set_tree without dummies)
+tree_pred2 <- predict(tree1_cp_tuned, test_set_tree)
+# Evaluating accuracy
+tree_accuracy2 <- confusionMatrix(tree_pred2, test_set_tree$disease)$overall["Accuracy"]
+tree_accuracy2
+# Decision Tree accuracy using test data = 0.7966
+# Visualizing the decision tree
+fancyRpartPlot(tree1_cp_tuned$finalModel, caption = "")
+# Based on these results, the original decision tree model (without manually tuning cp) appears to be the best performing classifier the test set. This can also be seen in the visualization of the tuned decision tree, where it is more complex than before, meaning it's fitting the training data better, but it is more prone to over-fitting. While tuning cp improved the cross-validation accuracy, it didn't translate to that much better performing on the unseen test data in this case, potentially due to over-fitting.
+
+```
+
+
+## Model Evaluation
+
+```{r Model Evaluation}
+# Since the original decision tree model (tree1) performed the best out of the classifiers, we will use it to perform a more sophisticated evaluation.
+tree1
+
+# (1) Producing a 2x2 confusion matrix
+cm <- confusionMatrix(test_set_tree$disease, tree_pred, positive = "1")
+cm
+# Based on the result of the confusion matrix, we get an accuracy of 0.8475, so the model correctly classified 84.75% of the individuals in the test set
+# Sensitivity:
+# The model correctly identified 87.5% of the individuals who actually had heart disease. This sensitivity value indicates the model is effective at catching most positive cases. The false negative rate (missing cases when they are positive) is 1 - 0.875 = 0.125, or 12.5%.
+# Specificity:
+# The model correctly identified 82.86% of the individuals who did not have heart disease. The false positive rate (incorrectly predicting disease when absent) is 1 - 0.8286 = 0.1714 or 17.14%.
+# The balance between sensitivity and specificity is a critical consideration in medical diagnosis. For this type of data set, the high sensitivity is often prioritized to avoid missing true cases, even if it means accepting a higher rate of false positives. Overall, the model demonstrates a good ability to detect the disease.
+
+
+# (2) Calculating the precision and recall manually
+# Calculating precision and recall for class '1' (Heart Disease Present)
+TP_1 <- 21
+FP_1 <- 6
+FN_1 <- 3
+precision_1 <- TP_1 / (TP_1 + FP_1)
+recall_1 <- TP_1 / (TP_1 + FN_1)
+precision_1
+recall_1
+# Class 1: Heart Disease Present
+# Precision (0.7778): This tells us that when the model predicts that someone has heart disease (class '1'), it is correct about 77.78% of the time. Out of all the individuals the model flagged as having the disease, roughly 78% actually do.
+# Recall (0.875): This tells us that the model correctly identified 87.5% of all the individuals who actually have heart disease. Out of everyone in the test set who truly had the disease, the model successfully identified about 87.5%. This recall value shows the model is effective at detecting the presence of the condition and minimizing missing actual cases.
+
+# Calculating precision and recall for class '0' (No Heart Disease)
+TN_0 <- 29
+FP_0 <- 3
+FN_0 <- 6
+precision_0 <- TN_0 / (TN_0 + FP_0)
+recall_0 <- TN_0 / (TN_0 + FN_0)
+precision_0
+recall_0
+# Class 0: No Heart Disease
+# Precision (0.9063): This tells us that when the model predicts that someone does not have heart disease (class '0'), it is correct about 90.63% of the time. Out of all the individuals the model classified as healthy, almost 91% were actually healthy.
+# Recall (0.8286): This tells us that the model correctly identified 82.86% of all the individuals who actually did not have heart disease. Out of everyone in the test set who was truly healthy, the model correctly identified about 83%. This means the model incorrectly identified some healthy individuals as having the disease.
+
+
+# (3) Producing an ROC plot
+library(pROC)
+# Getting class probabilities for decision tree
+pred_prob <- predict(tree1, test_set_tree, type ="prob")
+head(pred_prob)
+# Creating ROC curve for the model
+roc_obj <- roc((test_set_tree$disease), pred_prob[,1])
+plot(roc_obj, print.auc = TRUE)
+
+# In summary, the decision trees' accuracy of 84.75% suggests a reasonably good classifier. The AUC of 0.855 suggests that this classifier has a very good ability to distinguish between the two classes. The more detailed performance measures reveal that the model is fairly good at detecting the presence of heart disease (high sensitivity and recall for Class 1) and reliable in identifying healthy individuals too. The model also has more false positives, meaning it sometimes incorrectly flags healthy individuals as having the disease. However, missing a heart disease diagnosis is far worse than a false alarm, so the rate of false positives is not too detrimental in this context. Overall, relying just on the accuracy value does not give the complete picture of the model. The other metrics provide crucial insights into the model's strengths and weaknesses in the context of heart disease prediction, allowing for a more informed evaluation of its potential usefulness.
+
+```
+
+
+## Report
+
+This analysis demonstrated the trade-off between sensitivity (correctly identifying those with heart disease) and specificity (correctly identifying those without). The model we analyzed shows a good sensitivity (~88%), which is crucial for a diagnostic task to avoid missing positive cases. This came at the cost of a slightly lower specificity (~83%), indicating a higher rate of false positives - however, this trade-off is important to consider in healthcare-related machine learning models such as this one, where the cost of a false negative can be life-threatening. Experimenting with the cp parameter revealed that while we could improve cross-validation accuracy by allowing the tree to grow more complex, this didn't necessarily translate to better performance on the test data. In fact, the test set accuracy slightly decreased, suggesting a risk of over-fitting when the tree becomes too tailored to the training data. Further model refinement or exploration of other algorithms could help to find a better balance between correctly identifying those with disease and minimizing unnecessary alarms for healthy individuals. Overall, this analysis highlights the importance of considering multiple performance metrics, especially in machine learning models related to healthcare.

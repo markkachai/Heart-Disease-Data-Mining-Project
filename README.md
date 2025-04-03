@@ -53,30 +53,18 @@ Text from file:
 Data Description:
 - age: age in years
 - sex: sex (1 = male; 0 = female)
-- cp: chest pain type
--- Value 1: typical angina
--- Value 2: atypical angina
--- Value 3: non-anginal pain
--- Value 4: asymptomatic
+- cp: chest pain type (Value 1: typical angina, Value 2: atypical angina, Value 3: non-anginal pain, Value 4: asymptomatic)
 - trestbps: resting blood pressure (in mm Hg on admission to the hospital)
-	chol: serum cholestoral in mg/dl
-	fbs: (fasting blood sugar > 120 mg/dl)  (1 = true; 0 = false)
-	restecg: resting electrocardiographic results
-        	Value 0: normal
-        	Value 1: having ST-T wave abnormality (T wave inversions and/or ST elevation or depression of > 0.05 mV)
-		Value 2: showing probable or definite left ventricular hypertrophy by Estes' criteria
-	thalach: maximum heart rate achieved
-	exang: exercise induced angina (1 = yes; 0 = no)
-	oldpeak: ST depression induced by exercise relative to rest
-	slope: the slope of the peak exercise ST segment
-        	Value 1: upsloping
-        	Value 2: flat
-        	Value 3: downsloping
-	ca: number of major vessels (0-3) colored by flourosopy
-	thal: 3 = normal; 6 = fixed defect; 7 = reversable defect
-	num: diagnosis of heart disease (angiographic disease status)
-        	Value 0: < 50% diameter narrowing
-        	Value 1: > 50% diameter narrowing
+- chol: serum cholestoral in mg/dl
+- fbs: (fasting blood sugar > 120 mg/dl)  (1 = true; 0 = false)
+- restecg: resting electrocardiographic results (Value 0: normal, Value 1: having ST-T wave abnormality (T wave inversions and/or ST elevation or depression of > 0.05 mV), Value 2: showing probable or definite left ventricular hypertrophy by Estes' criteria)
+- thalach: maximum heart rate achieved
+- exang: exercise induced angina (1 = yes; 0 = no)
+- oldpeak: ST depression induced by exercise relative to rest
+- slope: the slope of the peak exercise ST segment (Value 1: upsloping, Value 2: flat, Value 3: downsloping)
+- ca: number of major vessels (0-3) colored by flourosopy
+- thal: 3 = normal; 6 = fixed defect; 7 = reversable defect
+- num: diagnosis of heart disease (angiographic disease status) (Value 0: < 50% diameter narrowing, Value 1: > 50% diameter narrowing)
 
 ### Tools
 ---
@@ -84,7 +72,7 @@ Data Description:
 
 ### Data Gathering and Integration
 ---
-In the initial data preparation phase, I performed the following tasks:
+In the initial data gathering and integration phase, I performed the following tasks:
 1. Data loading and inspection.
 2. Adding column names.
 3. Constructing a new variable, 'disease'.
@@ -126,7 +114,7 @@ ggplot(heart, aes(x = cp, fill = disease)) +
 # This bar graph raises a very interesting finding, where the majority of individuals with heart disease have a chest pain value of 4, meaning asymptomatic (no chest pain reported). In the other types of chest pain, where a variation of chest pain is reported, individuals with no heart disease heavily outweigh those that do have disease.
 ```
 
-![Image](https://github.com/user-attachments/assets/bb9c2479-e576-4793-91cf-91ee500112c5)
+![Rplot1](https://github.com/user-attachments/assets/bb9c2479-e576-4793-91cf-91ee500112c5)
 
 ```R
 # Bar Graph of age vs. disease
@@ -137,130 +125,48 @@ ggplot(heart, aes(x = age, fill = disease)) +
 # This bar graph shows large counts of individuals without heart disease younger than 55 years old, but shows a large sum of individuals with heart disease older than 55 years old. Thus, age seems to play a factor in whether or not an individual is diagnosed with heart disease.
 ```
 
+![Rplot2](https://github.com/user-attachments/assets/11cc3284-f00d-4dc5-8154-3782b50f676b)
+
 ### Data Cleaning and Preprocessing
 ---
+In the data cleaning and preprocessing phase, I performed the following tasks:
+1. Verifying if the data set contains unique observations.
+2. Finding and addressing missing values (NA's) in the data set.
+3. Applying a log transformation to a variable.
+4. Creating dummy variables.
+5. Standardizing the data.
 
-
-### Data Analysis
+### Machine Learning Methods
 ---
-Examples of code worked with
+Clustering Analysis
 
-- Finding average demand by time of day
-```R
-# Descriptive stats: DemandTime
+This section of the analysis explores the application of clustering techniques to the heart disease dataset to identify potential groupings within the data.
 
-citibike %>% group_by(DemandTime) %>% summarise(mean=mean(Demand), sd=sd(Demand))
+Two primary methods were employed: K-means clustering and Hierarchical Agglomerative Clustering (HAC).
 
-## Average demand is higher in the evenings than in the mornings.
-```
+1. K-Means Clustering
+- Libraries: The `stats` and `factoextra` libraries were loaded. `factoextra` was used to help visualize and determine the optimal number of clusters.
+- Preprocessing: The preprocessed predictor variables were used as input for the K-means algorithm.
+- Optimal K Determination: The optimal number of clusters (K) was determined using two methods: The "elbow" method, visualized with `fviz_nbclust` using the "wss" (within-cluster sum of squares) method, suggested K=2 as the point where the rate of decrease in WSS diminishes. The silhouette method, also visualized with `fviz_nbclust`, indicated that K=2 had a very similar average silhouette width to K=3, and given the result of the elbow method, K=2 was chosen. Choosing a smaller K was done to create more distinct groupings.
+- Clustering: The K-means algorithm (`kmeans`) was applied with K=2 and multiple restarts (`nstart = 25`) to ensure a robust solution.
+- Visualization: The resulting clusters were visualized using `fviz_cluster`. Principal Component Analysis (PCA) was performed using `prcomp` to reduce the dimensionality of the predictor variables for visualization. The data was then projected onto the first two principal components (PC1 and PC2), and plotted using `ggplot2` to visualize clusters, colored by both the original "disease" labels and the assigned cluster labels. This visualization aided in comparing the clustering results with the actual disease status.
+- Observation: The visualization showed a reasonable separation between clusters and some alignment with the actual disease status.
 
-- One step further: finding average demand by time of day for each day of the week
-```R
-# Converting DayOfWeek to a factor with a specific order.
+2. Hierarchical Agglomerative Clustering (HAC)
 
-citibike$DayOfWeek <- factor(citibike$DayOfWeek, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+- Library: The `cluster` library was loaded to use the `daisy` function.
+- Distance Matrix Calculation: The `daisy` function was used to calculate the Gower distance matrix, which is suitable for handling mixed data types (both categorical and numerical variables) present in the `heart_data`.
+- Clustering: Hierarchical clustering was performed using `hclust` with the "average" linkage method.
+- Dendrogram Visualization: The resulting dendrogram was plotted to visualize the hierarchical clustering structure.
+- Optimal K Determination: Like K-means, the optimal number of clusters for HAC was determined using the elbow and silhouette methods, implemented with `fviz_nbclust` and the `hcut` function. Both methods suggested K=2.
+- Cluster Assignment: Clusters were assigned by cutting the dendrogram at K=2 using `cutree`.
 
-# Descriptive stats: DemandTime, DayOfWeek
+Comparison of Clustering Results:
+- A crosstabulation was created using the `table` function to compare the cluster assignments from K-means and HAC. The comparison revealed a high degree of consistency between the two clustering methods, with only a small number of data points being assigned to different clusters by the two approaches.
 
-citibike %>% group_by(DemandTime, DayOfWeek) %>% summarise(mean=mean(Demand), sd=sd(Demand))
 
-## Evening Surges and Steady Weekday Patterns: Demand for bikes increases with later times in the day and on average the amount of demand is the same
-## throughout each day of the weekday and night. Demand slightly drops during the weekend.
-```
 
-- Visualizing our findings
-```R
-# Bar plot showing the average Demand for daytime and evening trips based on the day of the week.
 
-avg_demand_time_day <- ggplot(citibike, aes(x = DayOfWeek , y = Demand, fill = DemandTime)) +
-  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
-  geom_text(stat = "summary",
-            fun = "mean",
-            aes(label = sprintf("%.1f", after_stat(y)), group = DemandTime),
-            position = position_dodge(width = 0.9),
-            vjust = -0.5, 
-            size = 3) +
-  labs(title = "Average Demand for Daytime and Evening Trips During the Week",
-       x = "Day of the Week",
-       y = "Average Demand") +
-  scale_fill_manual(values = c("daytime" = "lightblue", "evening" = "darkblue"), labels = c("Daytime", "Evening")) +
-  theme_minimal()
-
-print(avg_demand_time_day)
-```
-![Rplot](https://github.com/markkachai/Citi-Bike-Case-Study/assets/122057279/7b9df5c5-d3b7-46af-98d3-f28141f69146)
-
-### Predictive Analysis
-
-The predictive analysis involved creating a multiple linear regression model. The choice of variables to include in the model was crucial for accurately predicting bike sharing demand.
-
-- Multiple linear regression model
-```R
-# Multiple Linear Regression Model:
-
-reg1 <- lm(Demand ~ DemandTime + StartStationName + EndStationName + DayOfWeek + Month, data = citibike) 
-
-summary(reg1)
-```
----
-Here's an explanation of why each predictor/variable was chosen:
-
-DemandTime:
-
-The time of day (e.g., morning, evening) can significantly impact bike sharing demand, as we’ve seen there is a higher average demand in the evenings across days of the week.
-
-StartStationName and EndStationName:
-
-The starting and ending stations are fundamental variables as they directly relate to the origin and destination of bike trips. Different stations may have varying levels of demand based on factors such as location, nearby attractions, population density, and transportation options.
-
-DayOfWeek:
-
-The day of the week affects commuting patterns, leisure activities, and overall demand. For example, weekdays typically exhibit higher demand during peak commuting hours, while weekends may see more leisure-oriented trips.
-
-Month:
-
-Seasonal variations can have a significant impact on bike-sharing demand. Weather conditions, holidays, and cultural events may influence the number of people using bike-sharing services. For instance, demand may increase during warmer months or decrease during holiday periods.
-
-By including these variables in our model, we can capture a comprehensive set of factors influencing bike-sharing demand. This allows the model to account for variations in demand based on our chosen predictors, leading to more accurate predictions.
-
-The multiple R^2 represents the proportion of variance explained by all the predictors together. In our model, the multiple R^2 is 0.8956, indicating that we can explain approximately 89.56% of the variance in our data with this model.
-
-The p-value for F-statistics is 2.2*10^-16, which is < 0.05, indicating that the regression model is highly significant, and the predictors collectively have a significant effect on predicting bike demand.  With this p-value, we know at least one of the coefficients is non-zero, and the model is valid.
-
-Additionally, considering these variables enables you to analyze and understand the underlying factors driving bike-sharing demand, which is essential for optimizing resource allocation and planning.
-
----
-
-This multiple linear regression model allows us to predict daytime and evening demand on a particular day in the future for our chosen stations:
-
-- Example of predictions made for one of our five chosen stations on a particular day in the future (May 1, 2019)
-```R
-## Morning Demand
-# predict using the predict function for Pershing Square North
-
-predict(reg1, data.frame(DemandTime = "daytime", StartStationName = "Pershing Square North", EndStationName = "Pershing Square North", DayOfWeek = "Wednesday", Month = "5"))
-
-predict(reg1, data.frame(DemandTime = "daytime", StartStationName = "Pershing Square North", EndStationName = "Broadway & E 22 St", DayOfWeek = "Wednesday", Month = "5"))
-
-predict(reg1, data.frame(DemandTime = "daytime", StartStationName = "Pershing Square North", EndStationName = "W 21 St & 6 Ave", DayOfWeek = "Wednesday", Month = "5"))
-
-predict(reg1, data.frame(DemandTime = "daytime", StartStationName = "Pershing Square North", EndStationName = "West St & Chambers St", DayOfWeek = "Wednesday", Month = "5"))
-
-predict(reg1, data.frame(DemandTime = "daytime", StartStationName = "Pershing Square North", EndStationName = "W 41 St & 8 Ave", DayOfWeek = "Wednesday", Month = "5"))
-
-## Evening Demand
-# predict using the predict function for Pershing Square North
-
-predict(reg1, data.frame(DemandTime = "evening", StartStationName = "Pershing Square North", EndStationName = "Pershing Square North", DayOfWeek = "Wednesday", Month = "5"))
-
-predict(reg1, data.frame(DemandTime = "evening", StartStationName = "Pershing Square North", EndStationName = "Broadway & E 22 St", DayOfWeek = "Wednesday", Month = "5"))
-
-predict(reg1, data.frame(DemandTime = "evening", StartStationName = "Pershing Square North", EndStationName = "W 21 St & 6 Ave", DayOfWeek = "Wednesday", Month = "5"))
-
-predict(reg1, data.frame(DemandTime = "evening", StartStationName = "Pershing Square North", EndStationName = "West St & Chambers St", DayOfWeek = "Wednesday", Month = "5"))
-
-predict(reg1, data.frame(DemandTime = "evening", StartStationName = "Pershing Square North", EndStationName = "W 41 St & 8 Ave", DayOfWeek = "Wednesday", Month = "5"))
-```
 
 ### Prescriptive Analysis and Optimization Model
 ---

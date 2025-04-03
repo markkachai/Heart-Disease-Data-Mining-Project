@@ -6,6 +6,7 @@
 - [Data Sources](#data-sources)
 - [Tools](#tools)
 - [Data Gathering and Integration](#data-gathering-and-integration)
+- [Exploratory Data Analysis](#exploratory-data-analysis)
 - [Data Cleaning and Preprocessing](#data-cleaning-and-preprocessing)
 - [Clustering Analysis](#clustering-analysis)
 - [Classification Methods](#classification-methods)

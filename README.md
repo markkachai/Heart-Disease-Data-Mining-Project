@@ -7,13 +7,10 @@
 - [Tools](#tools)
 - [Data Gathering and Integration](#data-gathering-and-integration)
 - [Data Cleaning and Preprocessing](#data-cleaning-and-preprocessing)
-- [Exploratory Data Analysis](#exploratory-data-analysis)
-- [Data Analysis](#data-analysis)
-- [Predictive Analysis](#predictive-analysis)
-- [Prescriptive Analysis and Optimization Model](#prescriptive-analysis-and-optimization-model)
-- [Results and Findings](#results-and-findings)
-- [Proposed Solution and Business Model](#proposed-solution-and-business-model)
-- [Limitations](#limitations)
+- [Clustering Analysis](#clustering-analysis)
+- [Classification Methods](#classification-methods)
+- [Model Evaluation](#model-evaluation)
+- [Report](#report)
 - [References](#references)
 
 ### Project Overview
@@ -136,38 +133,43 @@ In the data cleaning and preprocessing phase, I performed the following tasks:
 4. Creating dummy variables.
 5. Standardizing the data.
 
-### Machine Learning Methods
+### Clustering Analysis
 ---
-#### Clustering Analysis
-
-This section of the analysis explores the application of clustering techniques to the heart disease dataset to identify potential groupings within the data.
-
-Two primary methods were employed: K-means clustering and Hierarchical Agglomerative Clustering (HAC).
+This section of the analysis explores the application of clustering techniques to the heart disease dataset to identify potential groupings within the data. Two primary methods were employed: K-means clustering and Hierarchical Agglomerative Clustering (HAC).
 
 **1. K-Means Clustering**
-- Libraries: The `stats` and `factoextra` libraries were loaded. `factoextra` was used to help visualize and determine the optimal number of clusters.
-- Preprocessing: The preprocessed predictor variables were used as input for the K-means algorithm.
-- Optimal K Determination: The optimal number of clusters (K) was determined using two methods: The "elbow" method, visualized with `fviz_nbclust` using the "wss" (within-cluster sum of squares) method, suggested K=2 as the point where the rate of decrease in WSS diminishes. The silhouette method, also visualized with `fviz_nbclust`, indicated that K=2 had a very similar average silhouette width to K=3, and given the result of the elbow method, K=2 was chosen. Choosing a smaller K was done to create more distinct groupings.
-- Clustering: The K-means algorithm (`kmeans`) was applied with K=2 and multiple restarts (`nstart = 25`) to ensure a robust solution.
-- Visualization: The resulting clusters were visualized using `fviz_cluster`. Principal Component Analysis (PCA) was performed using `prcomp` to reduce the dimensionality of the predictor variables for visualization. The data was then projected onto the first two principal components (PC1 and PC2), and plotted using `ggplot2` to visualize clusters, colored by both the original "disease" labels and the assigned cluster labels. This visualization aided in comparing the clustering results with the actual disease status.
-- Observation: The visualization showed a reasonable separation between clusters and some alignment with the actual disease status.
+
+* **Libraries:** The `stats` and `factoextra` libraries were loaded. `factoextra` was used to help visualize and determine the optimal number of clusters.
+* **Preprocessing:** The preprocessed predictor variables were used as input for the K-means algorithm.
+* **Optimal K Determination:**
+    * The optimal number of clusters (K) was determined using two methods:
+        * The "elbow" method, visualized with `fviz_nbclust` using the "wss" (within-cluster sum of squares) method, suggested K=2 as the point where the rate of decrease in WSS diminishes.
+        * The silhouette method, also visualized with `fviz_nbclust`, indicated that K=2 had a very similar average silhouette width to K=3, and given the result of the elbow method, K=2 was chosen.
+    * Choosing a smaller K was done to create more distinct groupings.
+* **Clustering:** The K-means algorithm (`kmeans`) was applied with K=2 and multiple restarts (`nstart = 25`) to ensure a robust solution.
+* **Visualization:**
+    * The resulting clusters were visualized using `fviz_cluster`.
+    * Principal Component Analysis (PCA) was performed using `prcomp` to reduce the dimensionality of the predictor variables for visualization.
+    * The data was then projected onto the first two principal components (PC1 and PC2), and plotted using `ggplot2` to visualize clusters, colored by both the original "disease" labels and the assigned cluster labels. This visualization aided in comparing the clustering results with the actual disease status.
+* **Observation:** The visualization showed a reasonable separation between clusters, and some alignment with the actual disease status.
 
 **2. Hierarchical Agglomerative Clustering (HAC)**
 
-- Library: The `cluster` library was loaded to use the `daisy` function.
-- Distance Matrix Calculation: The `daisy` function was used to calculate the Gower distance matrix, which is suitable for handling mixed data types (both categorical and numerical variables) present in the `heart_data`.
-- Clustering: Hierarchical clustering was performed using `hclust` with the "average" linkage method.
-- Dendrogram Visualization: The resulting dendrogram was plotted to visualize the hierarchical clustering structure.
-- Optimal K Determination: Like K-means, the optimal number of clusters for HAC was determined using the elbow and silhouette methods, implemented with `fviz_nbclust` and the `hcut` function. Both methods suggested K=2.
-- Cluster Assignment: Clusters were assigned by cutting the dendrogram at K=2 using `cutree`.
+* **Library:** The `cluster` library was loaded to use the `daisy` function.
+* **Distance Matrix Calculation:** The `daisy` function was used to calculate the Gower distance matrix, which is suitable for handling mixed data types (both categorical and numerical variables) present in the `heart_data`.
+* **Clustering:** Hierarchical clustering was performed using `hclust` with the "average" linkage method.
+* **Dendrogram Visualization:** The resulting dendrogram was plotted to visualize the hierarchical clustering structure.
+* **Optimal K Determination:**
+    * Similar to K-means, the optimal number of clusters for HAC was determined using the elbow and silhouette methods, implemented with `fviz_nbclust` and the `hcut` function. Both methods suggested K=2.
+* **Cluster Assignment:** Clusters were assigned by cutting the dendrogram at K=2 using `cutree`.
 
-**Comparison of Clustering Results**
-- A crosstabulation was created using the `table` function to compare the cluster assignments from K-means and HAC. The comparison revealed a high degree of consistency between the two clustering methods, with only a small number of data points being assigned to different clusters by the two approaches.
+**3. Comparison of Clustering Results**
 
-#### Classification 
+* A crosstabulation was created using the `table` function to compare the cluster assignments from K-means and HAC.
+* **Observation:** The comparison revealed a high degree of consistency between the two clustering methods, with only a small number of data points being assigned to different clusters by the two approaches.
 
-**Classification Methods**
-
+### Classification Methods
+---
 This section details the classification methods applied to the heart disease dataset to predict the presence or absence of heart disease. Two algorithms were implemented: k-Nearest Neighbors (kNN) and Decision Trees.
 
 **1. k-Nearest Neighbors (kNN)**
@@ -208,36 +210,33 @@ This section details the classification methods applied to the heart disease dat
 * The original Decision Tree model performed slightly better on the test set than the kNN model.
 * Tuning the `cp` parameter of the Decision Tree did not improve the test set accuracy, suggesting potential overfitting.
 
-
-### Prescriptive Analysis and Optimization Model
+### Model Evaluation
 ---
-The predictions for demand between our five chosen stations were then input into the parameters of our optimization model. Due to the high daytime/evening demand of our selected stations, we had to change the number of bikes from 1,000 to 4,000 to satisfy demand.
+The Decision Tree model (`tree1`) was selected for in-depth evaluation due to its strong performance among the classification models. The evaluation process included the following key steps:
 
-Using this optimization model allowed us to find:
-- How many bikes should we allocate to each station?
-  - Based on our model and the number of bikes, the demand forecast showed that the best initial allocation was 3,427 bikes.
-- How many trips between stations every day?
-  - Given our parameters, the demand forecast showed the number of trips to be 6,244.
+1.  **Confusion Matrix:** A 2x2 confusion matrix was generated to assess the model's classification accuracy. The model achieved an overall accuracy of 84.75%, indicating that it correctly classified 84.75% of the individuals in the test set.
 
-### Results and Findings
+    * **Sensitivity:** The model demonstrated a sensitivity of 87.5%, correctly identifying 87.5% of individuals with heart disease. This indicates a low false negative rate (12.5%).
+    * **Specificity:** The model achieved a specificity of 82.86%, correctly identifying 82.86% of individuals without heart disease. The false positive rate was 17.14%.
+
+2.  **Precision and Recall:** Precision and recall were calculated for both classes (heart disease present and absent) to provide a more granular view of the model's performance.
+
+    * **Class 1 (Heart Disease Present):**
+        * Precision: 77.78% (When the model predicts heart disease, it is correct about 77.78% of the time).
+        * Recall: 87.5% (The model correctly identifies 87.5% of all individuals with heart disease).
+    * **Class 0 (No Heart Disease):**
+        * Precision: 90.63% (When the model predicts no heart disease, it is correct about 90.63% of the time).
+        * Recall: 82.86% (The model correctly identifies 82.86% of all individuals without heart disease).
+
+3.  **ROC Plot:** An ROC curve was generated to visualize the model's ability to discriminate between the two classes across different thresholds. The Area Under the Curve (AUC) was 0.855, indicating a very good ability to distinguish between individuals with and without heart disease.
+
+**Summary**
+
+The Decision Tree model demonstrates strong performance in predicting heart disease. It has a high overall accuracy and AUC, indicating good discriminative power. The model exhibits high sensitivity and recall for detecting the presence of heart disease, which is crucial in a medical context to minimize the risk of missing positive cases. While the model has a moderate false positive rate, this may be acceptable in scenarios where the cost of missing a diagnosis is higher than the cost of further investigating a false positive.
+
+### Report
 ---
-The analysis results are summarized as follows:
-1. On average, evenings have a higher demand than mornings.
-2. On average, demand slightly decreases during the weekend for both times of day.
-3. Our multiple linear regression model explains 89.56% of the variance in our data.
-4. Given our five stations, the best initial allocation of bikes is 3,427 bikes.
-
-### Proposed Solution and Business Model
----
-Based on the analysis, we recommend the following actions:
-- Increase the initial allocation of bikes to 3,427.
-- Provide cashback or discount opportunities to riders/people close to stations to displace extra bikes to the nearest high-demand stations.
-- Allow commuters/students to earn extra money/reward for displacing bikes from one station to another suggested station (Ex. Earn a reward per 5 bikes displaced).
-- A designated app for Citi Bike could manage and display all the displacement suggestions, discounts, cashback, and student account information.
-
-### Limitations
----
-All null values were removed from the dataset, which only took out a small percentage of the data. This was to ensure null values were not being used in the analysis and also so the multiple linear regression model would work.
+The analysis highlighted the crucial trade-off between sensitivity and specificity in the heart disease prediction model. The model demonstrated good sensitivity (approximately 88%), which is important for minimizing false negatives in medical diagnoses. However, this came with a slightly lower specificity (around 83%), indicating a higher rate of false positives. The report emphasizes that in healthcare, the cost of missing a positive case (false negative) can be higher than the cost of a false positive. Experiments with the `cp` parameter revealed that increasing model complexity to improve cross-validation accuracy could lead to overfitting and decreased performance on test data. The report suggests further model refinement or exploring other algorithms to achieve a better balance between sensitivity and specificity. Overall, the analysis underscores the importance of using multiple performance metrics in healthcare-related machine learning models.
 
 ### References
 ---
